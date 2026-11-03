@@ -42,6 +42,9 @@ SSH=${SSH:-ssh}
 LOUPE=${LOUPE_DIR:-$HERE/../os-loupe}
 EERO=${EERO_DIR:-$HERE/../os-eero}
 PLUGINS=${PLUGINS_DIR:-$HERE/../opnsense-plugins}
+# the repository index is signed with this key; routers check it against dhir-os-plugins.pub
+KEY=${SIGNING_KEY:-$HOME/.config/opnsense/dhir-os-plugins.key}
+[ -r "$KEY" ] || { echo "no signing key at $KEY (set SIGNING_KEY)" >&2; exit 1; }
 PLUGIN_DIRS="$LOUPE:loupe $EERO:eero"
 
 for p in "$HERE:" $PLUGIN_DIRS; do
@@ -88,14 +91,17 @@ for pkg in repo/All/*.pkg; do
 done
 CHECK
 COPYFILE_DISABLE=1 tar -czf - -C "$WORK" plugins | $SSH "$ROUTER" "tar -xzf - -C $REMOTE"
-$SSH "$ROUTER" "cd $REMOTE && $BUILD mkdir -p repo/All && cp plugins/net-mgmt/*/work/pkg/*.pkg repo/All/ && sh plugins/samever.sh && cd repo && pkg repo . >/dev/null" || { $SSH "$ROUTER" "rm -rf $REMOTE"; exit 1; }
+# the key is on the build box only while the index is signed
+$SSH "$ROUTER" "umask 077 && cat > $REMOTE/signing.key" < "$KEY"
+$SSH "$ROUTER" "cd $REMOTE && $BUILD mkdir -p repo/All && cp plugins/net-mgmt/*/work/pkg/*.pkg repo/All/ && sh plugins/samever.sh && cd repo && pkg repo . $REMOTE/signing.key >/dev/null; rc=\$?; rm -f $REMOTE/signing.key; exit \$rc" || { $SSH "$ROUTER" "rm -rf $REMOTE"; exit 1; }
 $SSH "$ROUTER" "tar -czf - -C $REMOTE repo; rm -rf $REMOTE" | tar -xzf - -C "$WORK"
 
 git pull -q --ff-only
 rm -rf repo
 cp -R "$WORK/repo" repo
 git add -A repo
-if git diff --cached --quiet -- repo/All; then
+# REINDEX=1 publishes a new index even when no package changed (a new signing key)
+if [ -z "$REINDEX" ] && git diff --cached --quiet -- repo/All; then
     git reset -q && git checkout -q -- repo
     echo "nothing new to publish"
     exit 0
