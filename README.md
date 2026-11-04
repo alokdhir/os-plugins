@@ -15,7 +15,7 @@ fetch -o /usr/local/etc/pkg/repos/dhir-os-plugins.conf https://alokdhir.github.i
 pkg update
 ```
 
-Then install the plugins from **System → Firmware → Plugins** (or `pkg install os-loupe os-eero`). Updates arrive with OPNsense's own, under **System → Firmware → Updates**.
+Then install the plugins from **System → Firmware → Plugins**. Updates arrive with OPNsense's own, under **System → Firmware → Updates**.
 
 The repository is signed: `pkg` checks every update against the public key fetched above (`dhir-os-plugins.pub`), so a tampered package or index is refused.
 
