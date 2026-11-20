@@ -23,12 +23,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# Build the os-loupe and os-eero packages on an OPNsense box and publish them to this package repository
+# Build the os-loupe, os-eero and os-probes packages on an OPNsense box and publish them to this package repository
 # (repo/, served by GitHub Pages at https://alokdhir.github.io/os-plugins/).
 #
 #   SSH="ssh -i key" ROUTER=user@router tools/publish.sh
 #
-# The plugins' checkouts sit next to this one (LOUPE_DIR, EERO_DIR), as does opnsense/plugins (PLUGINS_DIR).
+# The plugins' checkouts sit next to this one (LOUPE_DIR, EERO_DIR, PROBES_DIR), as does opnsense/plugins (PLUGINS_DIR).
 # Packages are built from what is committed (git archive HEAD of each repository), with OPNsense's own plugin
 # tooling (a checkout of opnsense/plugins, PLUGINS_DIR) on the OPNsense box, so their dependencies are the
 # versions OPNsense ships. They hold no compiled code: one package serves every architecture.
@@ -41,11 +41,12 @@ HERE=$(pwd)
 SSH=${SSH:-ssh}
 LOUPE=${LOUPE_DIR:-$HERE/../os-loupe}
 EERO=${EERO_DIR:-$HERE/../os-eero}
+PROBES=${PROBES_DIR:-$HERE/../os-probes}
 PLUGINS=${PLUGINS_DIR:-$HERE/../opnsense-plugins}
 # the repository index is signed with this key; routers check it against dhir-os-plugins.pub
 KEY=${SIGNING_KEY:-$HOME/.config/opnsense/dhir-os-plugins.key}
 [ -r "$KEY" ] || { echo "no signing key at $KEY (set SIGNING_KEY)" >&2; exit 1; }
-PLUGIN_DIRS="$LOUPE:loupe $EERO:eero"
+PLUGIN_DIRS="$LOUPE:loupe $EERO:eero $PROBES:probes"
 
 for p in "$HERE:" $PLUGIN_DIRS; do
     dir=${p%:*}
